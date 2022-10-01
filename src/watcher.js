@@ -68,6 +68,7 @@ class Watcher extends EventsEmitter {
       this.txDone[hash] = receipt;
     }).catch((error) => {
       this.txDone[hash] = { error: error.message, transactionHash: hash };
+      this.emit('error', { transactionHash: hash, error: error.message });
     });
   }
 
@@ -75,6 +76,7 @@ class Watcher extends EventsEmitter {
     return (tx) => {
       if (!tx) {
         this.txDone[txHash] = { error: 'not-found', transactionHash: txHash };
+        this.emit('error', { transactionHash: txHash, error: 'not-found' });
         return;
       }
       this.waitTx(tx);
@@ -88,8 +90,9 @@ class Watcher extends EventsEmitter {
         disableStorage: true,
         timeout: '10s',
       }]).then(this.parseTrace({ tx, hash }).bind(this))
-        .catch(()=>{
-
+        .catch(() => {
+          this.txDone[hash] = { error: 'trace-failed', transactionHash: hash };
+          this.emit('error', { transactionHash: hash, error: 'trace-failed' });
         });
     };
   }
