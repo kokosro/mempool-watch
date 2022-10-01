@@ -10,10 +10,8 @@ class Watcher extends EventsEmitter {
     this.provider = provider;
     this.frequency = frequency;
     this.timer = 0;
-    this.txDone = {};
     this.contracts = {};
     this.watchedAddresses = [];
-    this.txHashes = {};
   }
 
   async start() {
@@ -32,11 +30,11 @@ class Watcher extends EventsEmitter {
 
   parseTrace({ hash, tx }) {
     return (result) => {
-      if (this.txDone[hash]) {
-        return;
-      }
       if (result.errors.length > 0) {
-        this.txDone[hash] = { error: result.errors[0] };
+        this.emit('error', {
+          transactionHash: hash,
+          error: result.error[0],
+        });
         return;
       }
       const logs = parseTraceResultLogs(result.logs, hash).filter(({ address }) => this.watchedAddresses.includes(address));
@@ -58,16 +56,11 @@ class Watcher extends EventsEmitter {
     };
   }
 
-  txResult(hash) {
-    return this.txDone[hash];
-  }
-
   waitTx(tx) {
     const hash = tx.transactionHash || tx.hash;
     tx.wait().then((receipt) => {
-      this.txDone[hash] = receipt;
+
     }).catch((error) => {
-      this.txDone[hash] = { error: error.message, transactionHash: hash };
       this.emit('error', { transactionHash: hash, error: error.message });
     });
   }
@@ -75,7 +68,6 @@ class Watcher extends EventsEmitter {
   check(txHash) {
     return (tx) => {
       if (!tx) {
-        this.txDone[txHash] = { error: 'not-found', transactionHash: txHash };
         this.emit('error', { transactionHash: txHash, error: 'not-found' });
         return;
       }
@@ -90,18 +82,13 @@ class Watcher extends EventsEmitter {
         disableStorage: true,
         timeout: '10s',
       }]).then(this.parseTrace({ tx, hash }).bind(this))
-        .catch(() => {
-          this.txDone[hash] = { error: 'trace-failed', transactionHash: hash };
-          this.emit('error', { transactionHash: hash, error: 'trace-failed' });
+        .catch((e) => {
+          this.emit('error', { transactionHash: hash, error: `trace-failed ${e.message}`, rerror: e });
         });
     };
   }
 
   checkTxHash(hash) {
-    if (this.txHashes[hash]) {
-      return true;
-    }
-    this.txHashes[hash] = true;
     this.provider.getTransaction(hash).then(this.check(hash).bind(this)).catch((e) => {
       //      console.log(e);
     });
@@ -120,7 +107,6 @@ class Watcher extends EventsEmitter {
 
   async reinit() {
     this.clearSchedule();
-    this.txHashes = {};
     this.filterId = await this.provider.send('eth_newPendingTransactionFilter');
     this.run();
   }
