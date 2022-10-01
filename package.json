@@ -1,6 +1,6 @@
 {
   "name": "@kokosro/mempool-watch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Geth RPC mempool watcher",
   "main": "index.js",
   "scripts": {

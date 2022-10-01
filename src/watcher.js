@@ -86,7 +86,11 @@ class Watcher extends EventsEmitter {
         enableMemory: true,
         enableReturnData: true,
         disableStorage: true,
-      }]).then(this.parseTrace({ tx, hash }).bind(this));
+        timeout: '10s',
+      }]).then(this.parseTrace({ tx, hash }).bind(this))
+        .catch(()=>{
+
+        });
     };
   }
 
