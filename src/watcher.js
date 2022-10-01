@@ -96,7 +96,7 @@ class Watcher extends EventsEmitter {
     }
     this.txHashes[hash] = true;
     this.provider.getTransaction(hash).then(this.check(hash).bind(this)).catch((e) => {
-      console.log(e);
+      //      console.log(e);
     });
     return true;
   }
@@ -123,7 +123,7 @@ class Watcher extends EventsEmitter {
       .then((logs) => {
         logs.map(this.checkTxHash.bind(this));
       }).catch((e) => {
-        console.log(e);
+        //        console.log(e);
         this.reinit();
       });
     this.scheduleRun();
