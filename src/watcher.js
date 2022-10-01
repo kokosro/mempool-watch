@@ -21,7 +21,7 @@ class Watcher extends EventsEmitter {
     this.run();
   }
 
-  async subscribe(contract) {
+  subscribe(contract) {
     const address = ethers.utils.getAddress(contract.address);
     if (!this.contracts[address]) {
       this.contracts[address] = contract;
